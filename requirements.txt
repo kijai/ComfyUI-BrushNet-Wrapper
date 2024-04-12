@@ -1,0 +1,2 @@
+diffusers>=0.26.0
+omegaconf
