@@ -1,6 +1,8 @@
 import os
 from contextlib import nullcontext
 import torch
+import torch.nn.functional as F
+
 try:
     from diffusers import (
         DPMSolverMultistepScheduler, 
@@ -83,13 +85,19 @@ class brushnet_model_loader:
             if not os.path.exists(checkpoint_path):
                 print(f"Selected model: {checkpoint_path} not found, downloading...")
                 from huggingface_hub import snapshot_download
-                snapshot_download(repo_id="Kijai/BrushNet-fp16", allow_patterns=[f"*{brushnet_model}*"], local_dir=brushnet_model_folder, local_dir_use_symlinks=False)
+                snapshot_download(repo_id="Kijai/BrushNet-fp16", 
+                                  allow_patterns=[f"*{brushnet_model}*"], 
+                                  local_dir=brushnet_model_folder, 
+                                  local_dir_use_symlinks=False
+                                  )
 
             brushnet = BrushNetModel(**brushnet_config)
             brushnet_sd = comfy.utils.load_torch_file(checkpoint_path)
             brushnet.load_state_dict(brushnet_sd)
             brushnet.to(dtype)
 
+            pbar.update(1)
+            
             clip_sd = None
             load_models = [model]
             load_models.append(clip.load_model())
@@ -131,10 +139,6 @@ class brushnet_model_loader:
             scheduler=DPMSolverMultistepScheduler(**scheduler_config)
             pbar.update(1)
             del sd
-
-            pbar.update(1)
-
-            print("creating pipeline")
           
             self.pipe = StableDiffusionBrushNetPipeline(
                 unet=unet, 
@@ -147,9 +151,8 @@ class brushnet_model_loader:
                 safety_checker=None,
                 feature_extractor=None
             )   
-            print("pipeline created")
+
             pbar.update(1)
-            
             brushnet = {
                 "pipe": self.pipe,
             }
@@ -229,18 +232,31 @@ class brushnet_sampler:
             noise_scheduler = UniPCMultistepScheduler(**scheduler_config)
         pipe.scheduler = noise_scheduler
 
-        
+        B, H, W, C = image.shape
         image = image.permute(0, 3, 1, 2).to(device)
-        mask = mask.unsqueeze(0).to(device)
-        image = image * (1-mask)
 
+        if len(mask.shape) == 2:
+            mask = mask.unsqueeze(0)
+        mask = mask.to(device)
+        if mask.shape[0] < B:
+            repeat_times = B // mask.shape[0]
+            mask = mask.repeat(repeat_times, 1, 1, 1)
+        resized_mask = F.interpolate(mask.unsqueeze(1), size=[H, W], mode='nearest').squeeze(1)
+
+        image = image * (1-resized_mask)
+
+        prompt_list = []
+        prompt_list.append(prompt)
+        if len(prompt_list) < B:
+            prompt_list += [prompt_list[-1]] * (B - len(prompt_list))
+            
         autocast_condition = (dtype != torch.float32) and not mm.is_device_mps(device)
         with torch.autocast(mm.get_autocast_device(device), dtype=dtype) if autocast_condition else nullcontext():
             generator = torch.Generator(device).manual_seed(seed)
             images = pipe(
-                prompt, 
+                prompt_list, 
                 image=image, 
-                mask=mask, 
+                mask=resized_mask, 
                 num_inference_steps=steps, 
                 generator=generator,
                 brushnet_conditioning_scale=guidance_scale,
