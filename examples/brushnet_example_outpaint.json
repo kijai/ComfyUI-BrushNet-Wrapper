@@ -1,7 +1,188 @@
 {
-  "last_node_id": 54,
-  "last_link_id": 109,
+  "last_node_id": 69,
+  "last_link_id": 147,
   "nodes": [
+    {
+      "id": 47,
+      "type": "PreviewImage",
+      "pos": [
+        1728,
+        406
+      ],
+      "size": {
+        "0": 555.6796875,
+        "1": 582.3743896484375
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 147,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 24,
+      "type": "ImageResize+",
+      "pos": [
+        453,
+        569
+      ],
+      "size": {
+        "0": 315,
+        "1": 218
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            130
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageResize+"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "lanczos",
+        true,
+        "always",
+        2
+      ]
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "pos": [
+        28,
+        570
+      ],
+      "size": {
+        "0": 316,
+        "1": 405
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            39
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "lighthouse (5).png",
+        "image"
+      ]
+    },
+    {
+      "id": 69,
+      "type": "brushnet_sampler",
+      "pos": [
+        1281,
+        400
+      ],
+      "size": [
+        391.887911987302,
+        422.8043090820303
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "brushnet",
+          "type": "BRUSHNET",
+          "link": 144
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 145
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 146
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            147
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "brushnet_sampler"
+      },
+      "widgets_values": [
+        25,
+        7.5,
+        1,
+        0,
+        1,
+        false,
+        0,
+        178746569802073,
+        "randomize",
+        "UniPCMultistepScheduler",
+        "miniature, lighthouse",
+        "bad quality"
+      ]
+    },
     {
       "id": 3,
       "type": "CheckpointLoaderSimple",
@@ -14,7 +195,7 @@
         "1": 98
       },
       "flags": {},
-      "order": 0,
+      "order": 1,
       "mode": 0,
       "outputs": [
         {
@@ -48,47 +229,7 @@
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
-        "1_5/darkSushi25D25D_v40.safetensors"
-      ]
-    },
-    {
-      "id": 7,
-      "type": "LoadImage",
-      "pos": [
-        215,
-        582
-      ],
-      "size": {
-        "0": 316,
-        "1": 405
-      },
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            39
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": [],
-          "shape": 3,
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "clipspace/clipspace-mask-1261422.png [input]",
-        "image"
+        "1_5\\photon_v1.safetensors"
       ]
     },
     {
@@ -98,12 +239,12 @@
         688,
         402
       ],
-      "size": {
-        "0": 337,
-        "1": 98
-      },
+      "size": [
+        390.7779070281963,
+        98
+      ],
       "flags": {},
-      "order": 2,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -128,7 +269,7 @@
           "name": "brushnet",
           "type": "BRUSHNET",
           "links": [
-            4
+            144
           ],
           "shape": 3,
           "slot_index": 0
@@ -142,67 +283,11 @@
       ]
     },
     {
-      "id": 24,
-      "type": "ImageResize+",
+      "id": 66,
+      "type": "ImagePadForOutpaintMasked",
       "pos": [
-        578,
-        591
-      ],
-      "size": {
-        "0": 315,
-        "1": 218
-      },
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 39
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            99
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "links": null,
-          "shape": 3
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "links": null,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImageResize+"
-      },
-      "widgets_values": [
-        512,
-        512,
-        "lanczos",
-        true,
-        "always",
-        2
-      ]
-    },
-    {
-      "id": 52,
-      "type": "ImagePadForOutpaint",
-      "pos": [
-        918,
-        598
+        845,
+        612
       ],
       "size": {
         "0": 315,
@@ -215,7 +300,12 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 99
+          "link": 130
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": null
         }
       ],
       "outputs": [
@@ -223,8 +313,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            100,
-            108
+            145
           ],
           "shape": 3,
           "slot_index": 0
@@ -233,154 +322,47 @@
           "name": "MASK",
           "type": "MASK",
           "links": [
-            101,
-            109
+            135,
+            146
           ],
           "shape": 3,
           "slot_index": 1
         }
       ],
       "properties": {
-        "Node name for S&R": "ImagePadForOutpaint"
+        "Node name for S&R": "ImagePadForOutpaintMasked"
       },
       "widgets_values": [
-        256,
-        256,
-        256,
-        256,
-        1
+        128,
+        128,
+        128,
+        0,
+        2
       ]
     },
     {
-      "id": 53,
-      "type": "PreviewImage",
+      "id": 54,
+      "type": "MaskPreview+",
       "pos": [
-        928,
-        824
+        871,
+        845
       ],
       "size": [
-        210,
-        246
+        334.2839078979473,
+        295.2053316650374
       ],
       "flags": {},
       "order": 5,
       "mode": 0,
       "inputs": [
         {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 108
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
-      "id": 54,
-      "type": "MaskPreview+",
-      "pos": [
-        1148,
-        826
-      ],
-      "size": [
-        210,
-        246
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
           "name": "mask",
           "type": "MASK",
-          "link": 109
+          "link": 135
         }
       ],
       "properties": {
         "Node name for S&R": "MaskPreview+"
-      }
-    },
-    {
-      "id": 5,
-      "type": "brushnet_sampler",
-      "pos": [
-        1283,
-        404
-      ],
-      "size": {
-        "0": 399,
-        "1": 299
-      },
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "brushnet",
-          "type": "BRUSHNET",
-          "link": 4,
-          "slot_index": 0
-        },
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 100,
-          "slot_index": 1
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": 101
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            86
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "brushnet_sampler"
-      },
-      "widgets_values": [
-        30,
-        1,
-        29,
-        "fixed",
-        "UniPCMultistepScheduler",
-        "1girl, blue dress, forest, best quality, masterpiece"
-      ]
-    },
-    {
-      "id": 47,
-      "type": "PreviewImage",
-      "pos": [
-        1728,
-        406
-      ],
-      "size": [
-        555.6796875,
-        582.3743743896484
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 86,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
       }
     }
   ],
@@ -410,14 +392,6 @@
       "VAE"
     ],
     [
-      4,
-      1,
-      0,
-      5,
-      0,
-      "BRUSHNET"
-    ],
-    [
       39,
       7,
       0,
@@ -426,52 +400,52 @@
       "IMAGE"
     ],
     [
-      86,
-      5,
-      0,
-      47,
-      0,
-      "IMAGE"
-    ],
-    [
-      99,
+      130,
       24,
       0,
-      52,
+      66,
       0,
       "IMAGE"
     ],
     [
-      100,
-      52,
-      0,
-      5,
-      1,
-      "IMAGE"
-    ],
-    [
-      101,
-      52,
-      1,
-      5,
-      2,
-      "MASK"
-    ],
-    [
-      108,
-      52,
-      0,
-      53,
-      0,
-      "IMAGE"
-    ],
-    [
-      109,
-      52,
+      135,
+      66,
       1,
       54,
       0,
       "MASK"
+    ],
+    [
+      144,
+      1,
+      0,
+      69,
+      0,
+      "BRUSHNET"
+    ],
+    [
+      145,
+      66,
+      0,
+      69,
+      1,
+      "IMAGE"
+    ],
+    [
+      146,
+      66,
+      1,
+      69,
+      2,
+      "MASK"
+    ],
+    [
+      147,
+      69,
+      0,
+      47,
+      0,
+      "IMAGE"
     ]
   ],
   "groups": [],

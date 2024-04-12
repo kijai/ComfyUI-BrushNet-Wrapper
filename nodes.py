@@ -1,5 +1,4 @@
 import os
-from contextlib import nullcontext
 import torch
 import torch.nn.functional as F
 
@@ -23,20 +22,23 @@ try:
         create_text_encoder_from_ldm_clip_checkpoint
     )            
 except:
-    raise ImportError("Diffusers version too old. Please update to 0.26.0 minimum.")
+    raise ImportError("Diffusers version too old. Please update to 0.27.2 minimum.")
 
 from .brushnet.pipeline_brushnet import StableDiffusionBrushNetPipeline
 from .brushnet.brushnet import BrushNetModel
 from .brushnet.unet_2d_condition import UNet2DConditionModel
 
+import safetensors.torch
 from omegaconf import OmegaConf
 from transformers import CLIPTokenizer
+
 import comfy.model_management as mm
 import comfy.utils
 import folder_paths
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
-
+IS_MODEL_CPU_OFFLOAD_ENABLED = False
+    
 class brushnet_model_loader:
     @classmethod
     def INPUT_TYPES(s):
@@ -70,6 +72,8 @@ class brushnet_model_loader:
             "brushnet_model": brushnet_model
         }
         if not hasattr(self, "model") or self.model == None or custom_config != self.current_config:
+            global IS_MODEL_CPU_OFFLOAD_ENABLED
+            IS_MODEL_CPU_OFFLOAD_ENABLED = False
             pbar = comfy.utils.ProgressBar(5)
             self.current_config = custom_config
 
@@ -144,14 +148,14 @@ class brushnet_model_loader:
                 safety_checker=None,
                 feature_extractor=None
             )   
-            self.pipe.enable_model_cpu_offload()
+            #self.pipe.enable_model_cpu_offload()
             pbar.update(1)
             brushnet = {
                 "pipe": self.pipe,
             }
    
         return (brushnet,)
-    
+            
 class brushnet_sampler:
     @classmethod
     def INPUT_TYPES(s):
@@ -160,7 +164,12 @@ class brushnet_sampler:
             "image": ("IMAGE",),
             "mask": ("MASK",),
             "steps": ("INT", {"default": 25, "min": 1, "max": 200, "step": 1}),
-            "guidance_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 20.0, "step": 0.01}),
+            "cfg": ("FLOAT", {"default": 7.5, "min": 0.0, "max": 20.0, "step": 0.01}),
+            "cfg_brushnet": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 20.0, "step": 0.01}),
+            "control_guidance_start": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+            "control_guidance_end": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+            "guess_mode": ("BOOLEAN", {"default": False}),
+            "clip_skip": ("INT", {"default": 0, "min": 0, "max": 20, "step": 1}),
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
             "scheduler": (
                 [
@@ -177,8 +186,8 @@ class brushnet_sampler:
                     "default": "UniPCMultistepScheduler"
                 }),
             "prompt": ("STRING", {"multiline": True, "default": "caption",}),
-           
-            },    
+            "n_prompt": ("STRING", {"multiline": True, "default": "caption",}),
+            },
         }
 
     RETURN_TYPES = ("IMAGE",)
@@ -186,12 +195,16 @@ class brushnet_sampler:
     FUNCTION = "process"
     CATEGORY = "BrushNetWrapper"
 
-    def process(self, brushnet, image, mask, prompt, steps, guidance_scale, seed, scheduler):
+    def process(self, brushnet, image, mask, prompt, n_prompt, steps, cfg, guess_mode, clip_skip,
+                cfg_brushnet, control_guidance_start, control_guidance_end, seed, scheduler):
         device = mm.get_torch_device()
-        mm.unload_all_models()
         mm.soft_empty_cache()
         pipe=brushnet["pipe"]
-        #pipe.to(device, dtype=dtype)
+
+        global IS_MODEL_CPU_OFFLOAD_ENABLED
+        if not IS_MODEL_CPU_OFFLOAD_ENABLED:
+            pipe.enable_model_cpu_offload()
+            IS_MODEL_CPU_OFFLOAD_ENABLED = True
 
         scheduler_config = {
                 "num_train_timesteps": 1000,
@@ -244,16 +257,28 @@ class brushnet_sampler:
         if len(prompt_list) < B:
             prompt_list += [prompt_list[-1]] * (B - len(prompt_list))
 
+        n_prompt_list = []
+        n_prompt_list.append(n_prompt)
+        if len(n_prompt_list) < B:
+            n_prompt_list += [n_prompt_list[-1]] * (B - len(n_prompt_list))
+
         #sample    
         generator = torch.Generator(device).manual_seed(seed)
-        
+        print(prompt_list)
         images = pipe(
-            prompt_list, 
-            image=image, 
+            prompt_list,
+            negative_prompt=n_prompt_list,
+            image=image,
+            ipadapter_image=None,
             mask=resized_mask, 
             num_inference_steps=steps, 
             generator=generator,
-            brushnet_conditioning_scale=guidance_scale,
+            guidance_scale=cfg,
+            guess_mode=guess_mode,
+            clip_skip=clip_skip if clip_skip > 0 else None,
+            brushnet_conditioning_scale=cfg_brushnet,
+            control_guidance_start=control_guidance_start,
+            control_guidance_end=control_guidance_end,
             output_type="pt"
         ).images
 
@@ -261,11 +286,165 @@ class brushnet_sampler:
         return (image_out,)
 
 
+class brushnet_ella_loader:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "brushnet": ("BRUSHNET",),           
+            },
+        }
+
+    RETURN_TYPES = ("BRUSHNET",)
+    RETURN_NAMES = ("brushnet",)
+    FUNCTION = "loadmodel"
+    CATEGORY = "ELLA-Wrapper"
+
+    def loadmodel(self, brushnet):
+        print("loading ELLA")
+        from .ella.model import ELLA
+        from .ella.ella_unet import ELLAProxyUNet
+        checkpoint_path = os.path.join(folder_paths.models_dir,'ella')
+        ella_path = os.path.join(checkpoint_path, 'ella-sd1.5-tsc-t5xl.safetensors')
+        if not os.path.exists(ella_path):
+            from huggingface_hub import snapshot_download
+            snapshot_download(repo_id="QQGYLab/ELLA", local_dir=checkpoint_path, local_dir_use_symlinks=False)
+        
+        ella = ELLA()
+        safetensors.torch.load_model(ella, ella_path, strict=True)
+        ella_unet = ELLAProxyUNet(ella, brushnet['pipe'].unet)
+        brushnet['pipe'].unet = ella_unet
+        
+        return (brushnet,)      
+      
+class brushnet_sampler_ella:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "brushnet": ("BRUSHNET",),
+            "ella_embeds": ("ELLAEMBEDS",),
+            "image": ("IMAGE",),
+            "mask": ("MASK",),
+            "steps": ("INT", {"default": 25, "min": 1, "max": 200, "step": 1}),
+            "cfg": ("FLOAT", {"default": 7.5, "min": 0.0, "max": 20.0, "step": 0.01}),
+            "cfg_brushnet": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 20.0, "step": 0.01}),
+            "control_guidance_start": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+            "control_guidance_end": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+            "guess_mode": ("BOOLEAN", {"default": False}),
+            "clip_skip": ("INT", {"default": 0, "min": 0, "max": 20, "step": 1}),
+            "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+            "scheduler": (
+                [
+                    "DPMSolverMultistepScheduler",
+                    "DPMSolverMultistepScheduler_SDE_karras",
+                    "DDPMScheduler",
+                    "LCMScheduler",
+                    "PNDMScheduler",
+                    "DEISMultistepScheduler",
+                    "EulerDiscreteScheduler",
+                    "EulerAncestralDiscreteScheduler",
+                    "UniPCMultistepScheduler"
+                ], {
+                    "default": "UniPCMultistepScheduler"
+                }),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("images",)
+    FUNCTION = "process"
+    CATEGORY = "BrushNetWrapper"
+
+    def process(self, brushnet, image, mask, steps, cfg, guess_mode, clip_skip, ella_embeds,
+                cfg_brushnet, control_guidance_start, control_guidance_end, seed, scheduler):
+        device = mm.get_torch_device()
+        dtype = mm.unet_dtype()
+        mm.soft_empty_cache()
+        pipe=brushnet["pipe"].to(dtype)
+
+        global IS_MODEL_CPU_OFFLOAD_ENABLED
+        if not IS_MODEL_CPU_OFFLOAD_ENABLED:
+            pipe.enable_model_cpu_offload()
+            IS_MODEL_CPU_OFFLOAD_ENABLED = True
+  
+        scheduler_config = {
+                "num_train_timesteps": 1000,
+                "beta_start":    0.00085,
+                "beta_end":      0.012,
+                "beta_schedule": "scaled_linear",
+                "steps_offset": 1,
+            }
+        if scheduler == "DPMSolverMultistepScheduler":
+            noise_scheduler = DPMSolverMultistepScheduler(**scheduler_config)
+        elif scheduler == "DPMSolverMultistepScheduler_SDE_karras":
+            scheduler_config.update({"algorithm_type": "sde-dpmsolver++"})
+            scheduler_config.update({"use_karras_sigmas": True})
+            noise_scheduler = DPMSolverMultistepScheduler(**scheduler_config)
+        elif scheduler == "DDPMScheduler":
+            noise_scheduler = DDPMScheduler(**scheduler_config)
+        elif scheduler == "LCMScheduler":
+            noise_scheduler = LCMScheduler(**scheduler_config)
+        elif scheduler == "PNDMScheduler":
+            scheduler_config.update({"set_alpha_to_one": False})
+            scheduler_config.update({"trained_betas": None})
+            noise_scheduler = PNDMScheduler(**scheduler_config)
+        elif scheduler == "DEISMultistepScheduler":
+            noise_scheduler = DEISMultistepScheduler(**scheduler_config)
+        elif scheduler == "EulerDiscreteScheduler":
+            noise_scheduler = EulerDiscreteScheduler(**scheduler_config)
+        elif scheduler == "EulerAncestralDiscreteScheduler":
+            noise_scheduler = EulerAncestralDiscreteScheduler(**scheduler_config)
+        elif scheduler == "UniPCMultistepScheduler":
+            noise_scheduler = UniPCMultistepScheduler(**scheduler_config)
+        pipe.scheduler = noise_scheduler
+
+        B, H, W, C = image.shape
+        image = image.permute(0, 3, 1, 2).to(device)
+
+        #handle masks
+        if len(mask.shape) == 2:
+            mask = mask.unsqueeze(0)
+        mask = mask.to(device)
+        if mask.shape[0] < B:
+            repeat_times = B // mask.shape[0]
+            mask = mask.repeat(repeat_times, 1, 1, 1)
+        resized_mask = F.interpolate(mask.unsqueeze(1), size=[H, W], mode='nearest').squeeze(1)
+
+        image = image * (1-resized_mask)
+
+        #sample    
+        generator = torch.Generator(device).manual_seed(seed)
+        
+        images = pipe(
+            prompt=None,
+            negative_prompt=None,
+            prompt_embeds=ella_embeds["prompt_embeds"],
+            negative_prompt_embeds=ella_embeds["negative_prompt_embeds"],
+            image=image,
+            ipadapter_image=None,
+            mask=resized_mask, 
+            num_inference_steps=steps, 
+            generator=generator,
+            guidance_scale=cfg,
+            guess_mode=guess_mode,
+            clip_skip=clip_skip if clip_skip > 0 else None,
+            brushnet_conditioning_scale=cfg_brushnet,
+            control_guidance_start=control_guidance_start,
+            control_guidance_end=control_guidance_end,
+            output_type="pt"
+        ).images
+
+        image_out = images.permute(0, 2, 3, 1).cpu().float()
+        return (image_out,)
+    
 NODE_CLASS_MAPPINGS = {
     "brushnet_model_loader": brushnet_model_loader,
     "brushnet_sampler": brushnet_sampler,
+    "brushnet_sampler_ella": brushnet_sampler_ella,
+    "brushnet_ella_loader": brushnet_ella_loader
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "brushnet_model_loader": "BrushNet Model Loader",
     "brushnet_sampler": "BrushNet Sampler",
+    "brushnet_sampler_ella": "BrushNet Sampler (ELLA)",
+    "brushnet_ella_loader": "BrushNet ELLA Loader"
 }

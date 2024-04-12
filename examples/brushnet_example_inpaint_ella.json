@@ -1,65 +1,7 @@
 {
-  "last_node_id": 52,
-  "last_link_id": 103,
+  "last_node_id": 60,
+  "last_link_id": 129,
   "nodes": [
-    {
-      "id": 24,
-      "type": "ImageResize+",
-      "pos": [
-        578,
-        591
-      ],
-      "size": {
-        "0": 315,
-        "1": 218
-      },
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 39
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            81,
-            90,
-            100
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "links": null,
-          "shape": 3
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "links": null,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImageResize+"
-      },
-      "widgets_values": [
-        512,
-        512,
-        "lanczos",
-        true,
-        "always",
-        2
-      ]
-    },
     {
       "id": 50,
       "type": "MaskToImage",
@@ -72,7 +14,7 @@
         "1": 26
       },
       "flags": {},
-      "order": 8,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -108,7 +50,7 @@
         "1": 146
       },
       "flags": {},
-      "order": 11,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -160,7 +102,7 @@
         "1": 480.1783142089844
       },
       "flags": {},
-      "order": 12,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -186,7 +128,7 @@
         "1": 480.1783142089844
       },
       "flags": {},
-      "order": 13,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -212,7 +154,7 @@
         "1": 146
       },
       "flags": {},
-      "order": 9,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -223,7 +165,7 @@
         {
           "name": "source",
           "type": "IMAGE",
-          "link": 102
+          "link": 108
         },
         {
           "name": "mask",
@@ -264,7 +206,7 @@
         "1": 246
       },
       "flags": {},
-      "order": 5,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -278,24 +220,284 @@
       }
     },
     {
-      "id": 45,
-      "type": "GrowMaskWithBlur",
+      "id": 47,
+      "type": "PreviewImage",
       "pos": [
-        638,
-        962
+        1711,
+        147
+      ],
+      "size": {
+        "0": 361.5766296386719,
+        "1": 361.18719482421875
+      },
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 109,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 51,
+      "type": "RemapMaskRange",
+      "pos": [
+        1240,
+        885
       ],
       "size": {
         "0": 315,
-        "1": 246
+        "1": 82
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 94
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [
+            95,
+            96
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RemapMaskRange"
+      },
+      "widgets_values": [
+        0,
+        0.9500000000000001
+      ]
+    },
+    {
+      "id": 1,
+      "type": "brushnet_model_loader",
+      "pos": [
+        688,
+        402
+      ],
+      "size": {
+        "0": 337,
+        "1": 98
       },
       "flags": {},
       "order": 3,
       "mode": 0,
       "inputs": [
         {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1,
+          "slot_index": 0
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "brushnet",
+          "type": "BRUSHNET",
+          "links": [
+            104
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "brushnet_model_loader"
+      },
+      "widgets_values": [
+        "brushnet_segmentation_mask"
+      ]
+    },
+    {
+      "id": 53,
+      "type": "brushnet_ella_loader",
+      "pos": [
+        941,
+        312
+      ],
+      "size": {
+        "0": 216.59999084472656,
+        "1": 26
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "brushnet",
+          "type": "BRUSHNET",
+          "link": 104
+        }
+      ],
+      "outputs": [
+        {
+          "name": "brushnet",
+          "type": "BRUSHNET",
+          "links": [
+            110
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "brushnet_ella_loader"
+      }
+    },
+    {
+      "id": 3,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        202,
+        402
+      ],
+      "size": {
+        "0": 351.8843078613281,
+        "1": 98
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ],
+          "shape": 3
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ],
+          "shape": 3,
+          "slot_index": 1
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3
+          ],
+          "shape": 3,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "1_5\\realisticVisionV60B1_v51VAE.safetensors"
+      ]
+    },
+    {
+      "id": 24,
+      "type": "ImageResize+",
+      "pos": [
+        578,
+        591
+      ],
+      "size": {
+        "0": 315,
+        "1": 218
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            81,
+            90,
+            116
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageResize+"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "lanczos",
+        true,
+        "always",
+        2
+      ]
+    },
+    {
+      "id": 45,
+      "type": "GrowMaskWithBlur",
+      "pos": [
+        644,
+        948
+      ],
+      "size": {
+        "0": 315,
+        "1": 246
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
           "name": "mask",
           "type": "MASK",
-          "link": 84
+          "link": 129
         }
       ],
       "outputs": [
@@ -332,82 +534,6 @@
       ]
     },
     {
-      "id": 47,
-      "type": "PreviewImage",
-      "pos": [
-        1711,
-        147
-      ],
-      "size": {
-        "0": 361.5766296386719,
-        "1": 361.18719482421875
-      },
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 103,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
-      "id": 1,
-      "type": "brushnet_model_loader",
-      "pos": [
-        688,
-        402
-      ],
-      "size": {
-        "0": 337,
-        "1": 98
-      },
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 1,
-          "slot_index": 0
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 3
-        }
-      ],
-      "outputs": [
-        {
-          "name": "brushnet",
-          "type": "BRUSHNET",
-          "links": [
-            99
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "brushnet_model_loader"
-      },
-      "widgets_values": [
-        "brushnet_segmentation_mask"
-      ]
-    },
-    {
       "id": 7,
       "type": "LoadImage",
       "pos": [
@@ -419,7 +545,7 @@
         "1": 405
       },
       "flags": {},
-      "order": 0,
+      "order": 1,
       "mode": 0,
       "outputs": [
         {
@@ -435,8 +561,8 @@
           "name": "MASK",
           "type": "MASK",
           "links": [
-            84,
-            101
+            128,
+            129
           ],
           "shape": 3,
           "slot_index": 1
@@ -446,129 +572,45 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "clipspace/clipspace-mask-5637958.png [input]",
+        "clipspace/clipspace-mask-6229541.png [input]",
         "image"
       ]
     },
     {
-      "id": 3,
-      "type": "CheckpointLoaderSimple",
+      "id": 54,
+      "type": "brushnet_sampler_ella",
       "pos": [
-        202,
-        402
+        1250,
+        278
       ],
       "size": {
-        "0": 351.8843078613281,
-        "1": 98
+        "0": 348.9030456542969,
+        "1": 395.87213134765625
       },
       "flags": {},
-      "order": 1,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            1
-          ],
-          "shape": 3
-        },
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            2
-          ],
-          "shape": 3,
-          "slot_index": 1
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            3
-          ],
-          "shape": 3,
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
-      },
-      "widgets_values": [
-        "1_5\\photon_v1.safetensors"
-      ]
-    },
-    {
-      "id": 51,
-      "type": "RemapMaskRange",
-      "pos": [
-        1240,
-        885
-      ],
-      "size": {
-        "0": 315,
-        "1": 82
-      },
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": 94
-        }
-      ],
-      "outputs": [
-        {
-          "name": "mask",
-          "type": "MASK",
-          "links": [
-            95,
-            96
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "RemapMaskRange"
-      },
-      "widgets_values": [
-        0,
-        0.9500000000000001
-      ]
-    },
-    {
-      "id": 52,
-      "type": "brushnet_sampler",
-      "pos": [
-        1206,
-        272
-      ],
-      "size": [
-        396.6837166259743,
-        448.22052941894424
-      ],
-      "flags": {},
-      "order": 7,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
           "name": "brushnet",
           "type": "BRUSHNET",
-          "link": 99
+          "link": 110
+        },
+        {
+          "name": "ella_embeds",
+          "type": "ELLAEMBEDS",
+          "link": 111,
+          "slot_index": 1
         },
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 100
+          "link": 116
         },
         {
           "name": "mask",
           "type": "MASK",
-          "link": 101
+          "link": 128
         }
       ],
       "outputs": [
@@ -576,14 +618,14 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            102,
-            103
+            108,
+            109
           ],
           "shape": 3
         }
       ],
       "properties": {
-        "Node name for S&R": "brushnet_sampler"
+        "Node name for S&R": "brushnet_sampler_ella"
       },
       "widgets_values": [
         25,
@@ -593,11 +635,44 @@
         1,
         false,
         0,
-        492040977673787,
-        "randomize",
-        "UniPCMultistepScheduler",
-        "sunglasses",
-        "bad quality"
+        30,
+        "fixed",
+        "UniPCMultistepScheduler"
+      ]
+    },
+    {
+      "id": 55,
+      "type": "ella_t5_embeds",
+      "pos": [
+        404,
+        50
+      ],
+      "size": {
+        "0": 485.3834228515625,
+        "1": 248.846435546875
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "ella_embeds",
+          "type": "ELLAEMBEDS",
+          "links": [
+            111
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ella_t5_embeds"
+      },
+      "widgets_values": [
+        "painting of a woman waving with her left hand raised up",
+        1,
+        128,
+        false,
+        true
       ]
     }
   ],
@@ -641,14 +716,6 @@
       44,
       0,
       "IMAGE"
-    ],
-    [
-      84,
-      7,
-      1,
-      45,
-      0,
-      "MASK"
     ],
     [
       85,
@@ -723,44 +790,68 @@
       "MASK"
     ],
     [
-      99,
+      104,
       1,
       0,
-      52,
+      53,
       0,
       "BRUSHNET"
     ],
     [
-      100,
-      24,
-      0,
-      52,
-      1,
-      "IMAGE"
-    ],
-    [
-      101,
-      7,
-      1,
-      52,
-      2,
-      "MASK"
-    ],
-    [
-      102,
-      52,
+      108,
+      54,
       0,
       44,
       1,
       "IMAGE"
     ],
     [
-      103,
-      52,
+      109,
+      54,
       0,
       47,
       0,
       "IMAGE"
+    ],
+    [
+      110,
+      53,
+      0,
+      54,
+      0,
+      "BRUSHNET"
+    ],
+    [
+      111,
+      55,
+      0,
+      54,
+      1,
+      "ELLAEMBEDS"
+    ],
+    [
+      116,
+      24,
+      0,
+      54,
+      2,
+      "IMAGE"
+    ],
+    [
+      128,
+      7,
+      1,
+      54,
+      3,
+      "MASK"
+    ],
+    [
+      129,
+      7,
+      1,
+      45,
+      0,
+      "MASK"
     ]
   ],
   "groups": [],

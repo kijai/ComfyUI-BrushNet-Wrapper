@@ -138,7 +138,10 @@ class CrossAttnUpBlock2D(nn.Module):
         return_res_samples: Optional[bool]=False,
         up_block_add_samples: Optional[torch.FloatTensor] = None,
     ) -> torch.FloatTensor:
-        lora_scale = cross_attention_kwargs.get("scale", 1.0) if cross_attention_kwargs is not None else 1.0
+        if cross_attention_kwargs is not None:
+            if cross_attention_kwargs.get("scale", None) is not None:
+                logger.warning("Passing `scale` to `cross_attention_kwargs` is deprecated. `scale` will be ignored.")
+
         is_freeu_enabled = (
             getattr(self, "s1", None)
             and getattr(self, "s2", None)
@@ -194,7 +197,7 @@ class CrossAttnUpBlock2D(nn.Module):
                     return_dict=False,
                 )[0]
             else:
-                hidden_states = resnet(hidden_states, temb, scale=lora_scale)
+                hidden_states = resnet(hidden_states, temb)
                 hidden_states = attn(
                     hidden_states,
                     encoder_hidden_states=encoder_hidden_states,
@@ -210,7 +213,7 @@ class CrossAttnUpBlock2D(nn.Module):
 
         if self.upsamplers is not None:
             for upsampler in self.upsamplers:
-                hidden_states = upsampler(hidden_states, upsample_size, scale=lora_scale)
+                hidden_states = upsampler(hidden_states, upsample_size)
             if return_res_samples:
                 output_states = output_states + (hidden_states,)
             if up_block_add_samples is not None:
@@ -409,8 +412,7 @@ class MidBlock2D(nn.Module):
         hidden_states: torch.FloatTensor,
         temb: Optional[torch.FloatTensor] = None,
     ) -> torch.FloatTensor:
-        lora_scale = 1.0
-        hidden_states = self.resnets[0](hidden_states, temb, scale=lora_scale)
+        hidden_states = self.resnets[0](hidden_states, temb)
         for resnet in self.resnets[1:]:
             if self.training and self.gradient_checkpointing:
 
@@ -431,7 +433,7 @@ class MidBlock2D(nn.Module):
                     **ckpt_kwargs,
                 )
             else:
-                hidden_states = resnet(hidden_states, temb, scale=lora_scale)
+                hidden_states = resnet(hidden_states, temb)
 
         return hidden_states
     

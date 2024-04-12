@@ -1,6 +1,6 @@
 {
-  "last_node_id": 74,
-  "last_link_id": 155,
+  "last_node_id": 80,
+  "last_link_id": 175,
   "nodes": [
     {
       "id": 24,
@@ -14,7 +14,7 @@
         "1": 218
       },
       "flags": {},
-      "order": 4,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -58,31 +58,6 @@
         "always",
         2
       ]
-    },
-    {
-      "id": 54,
-      "type": "MaskPreview+",
-      "pos": [
-        1295,
-        764
-      ],
-      "size": {
-        "0": 315.012451171875,
-        "1": 337.9891662597656
-      },
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": 135
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "MaskPreview+"
-      }
     },
     {
       "id": 55,
@@ -134,18 +109,477 @@
       }
     },
     {
+      "id": 56,
+      "type": "RemBGSession+",
+      "pos": [
+        436,
+        970
+      ],
+      "size": {
+        "0": 315,
+        "1": 82
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "REMBG_SESSION",
+          "type": "REMBG_SESSION",
+          "links": [
+            110
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RemBGSession+"
+      },
+      "widgets_values": [
+        "u2net_human_seg: human segmentation",
+        "CPU"
+      ]
+    },
+    {
+      "id": 73,
+      "type": "ImagePadForOutpaintMasked",
+      "pos": [
+        973,
+        1563
+      ],
+      "size": {
+        "0": 315,
+        "1": 174
+      },
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 165
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            167
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            168
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImagePadForOutpaintMasked"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        256,
+        0
+      ]
+    },
+    {
+      "id": 66,
+      "type": "ImagePadForOutpaintMasked",
+      "pos": [
+        806,
+        584
+      ],
+      "size": {
+        "0": 315,
+        "1": 174
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 130
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 143
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            157
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            135,
+            158
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImagePadForOutpaintMasked"
+      },
+      "widgets_values": [
+        128,
+        128,
+        128,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "pos": [
+        1631,
+        173
+      ],
+      "size": {
+        "0": 316,
+        "1": 405
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            39
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "oldman.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 54,
+      "type": "MaskPreview+",
+      "pos": [
+        1293,
+        729
+      ],
+      "size": {
+        "0": 315.012451171875,
+        "1": 337.9891662597656
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 135
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MaskPreview+"
+      }
+    },
+    {
+      "id": 70,
+      "type": "ImagePadForOutpaintMasked",
+      "pos": [
+        857,
+        1122
+      ],
+      "size": {
+        "0": 315,
+        "1": 174
+      },
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 160
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            162
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            163
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImagePadForOutpaintMasked"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        256,
+        0
+      ]
+    },
+    {
+      "id": 47,
+      "type": "PreviewImage",
+      "pos": [
+        1972,
+        197
+      ],
+      "size": {
+        "0": 598.1146240234375,
+        "1": 551.4878540039062
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 159,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 71,
+      "type": "PreviewImage",
+      "pos": [
+        2591,
+        187
+      ],
+      "size": {
+        "0": 704.5072021484375,
+        "1": 839.8850708007812
+      },
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 164,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 74,
+      "type": "PreviewImage",
+      "pos": [
+        3320,
+        187
+      ],
+      "size": {
+        "0": 786.09912109375,
+        "1": 1164.818603515625
+      },
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 169,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 75,
+      "type": "brushnet_sampler",
+      "pos": [
+        1208,
+        145
+      ],
+      "size": [
+        393.54825627441437,
+        477.48640561035177
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "brushnet",
+          "type": "BRUSHNET",
+          "link": 156
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 157
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 158
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            159,
+            160
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "brushnet_sampler"
+      },
+      "widgets_values": [
+        25,
+        7.5,
+        1,
+        0,
+        1,
+        false,
+        0,
+        127,
+        "fixed",
+        "UniPCMultistepScheduler",
+        "seaside, old man, scenery",
+        "bad quality"
+      ]
+    },
+    {
+      "id": 1,
+      "type": "brushnet_model_loader",
+      "pos": [
+        688,
+        402
+      ],
+      "size": [
+        378.24762954139715,
+        98.14945294189465
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1,
+          "slot_index": 0
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "brushnet",
+          "type": "BRUSHNET",
+          "links": [
+            156,
+            161,
+            166
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "brushnet_model_loader"
+      },
+      "widgets_values": [
+        "brushnet_segmentation_mask"
+      ]
+    },
+    {
       "id": 3,
       "type": "CheckpointLoaderSimple",
       "pos": [
         202,
         402
       ],
-      "size": {
-        "0": 351.8843078613281,
-        "1": 98
-      },
+      "size": [
+        401.15305795288054,
+        98
+      ],
       "flags": {},
-      "order": 0,
+      "order": 2,
       "mode": 0,
       "outputs": [
         {
@@ -179,167 +613,20 @@
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
-        "1_5/epicphotogasm_x.safetensors"
+        "1_5\\realisticVisionV60B1_v51VAE.safetensors"
       ]
     },
     {
-      "id": 56,
-      "type": "RemBGSession+",
-      "pos": [
-        436,
-        970
-      ],
-      "size": {
-        "0": 315,
-        "1": 82
-      },
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "REMBG_SESSION",
-          "type": "REMBG_SESSION",
-          "links": [
-            110
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "RemBGSession+"
-      },
-      "widgets_values": [
-        "u2net_human_seg: human segmentation",
-        "CPU"
-      ]
-    },
-    {
-      "id": 66,
-      "type": "ImagePadForOutpaintMasked",
-      "pos": [
-        845,
-        612
-      ],
-      "size": {
-        "0": 315,
-        "1": 174
-      },
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 130
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": 143
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            131
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": [
-            132,
-            135
-          ],
-          "shape": 3,
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImagePadForOutpaintMasked"
-      },
-      "widgets_values": [
-        128,
-        128,
-        128,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 70,
-      "type": "ImagePadForOutpaintMasked",
-      "pos": [
-        875,
-        1181
-      ],
-      "size": {
-        "0": 315,
-        "1": 174
-      },
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 147
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            148
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": [
-            149
-          ],
-          "shape": 3,
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImagePadForOutpaintMasked"
-      },
-      "widgets_values": [
-        0,
-        0,
-        0,
-        256,
-        0
-      ]
-    },
-    {
-      "id": 69,
+      "id": 76,
       "type": "brushnet_sampler",
       "pos": [
-        1299,
-        1175
+        1371,
+        1159
       ],
-      "size": {
-        "0": 399,
-        "1": 299
-      },
+      "size": [
+        393.5482482910156,
+        477.4864196777344
+      ],
       "flags": {},
       "order": 11,
       "mode": 0,
@@ -347,19 +634,17 @@
         {
           "name": "brushnet",
           "type": "BRUSHNET",
-          "link": 144,
-          "slot_index": 0
+          "link": 161
         },
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 148,
-          "slot_index": 1
+          "link": 162
         },
         {
           "name": "mask",
           "type": "MASK",
-          "link": 149
+          "link": 163
         }
       ],
       "outputs": [
@@ -367,171 +652,41 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            150,
-            151
+            164,
+            165
           ],
-          "shape": 3,
-          "slot_index": 0
+          "shape": 3
         }
       ],
       "properties": {
         "Node name for S&R": "brushnet_sampler"
       },
       "widgets_values": [
-        32,
+        25,
+        7.5,
         1,
-        36,
+        0,
+        1,
+        false,
+        0,
+        137,
         "fixed",
-        "DPMSolverMultistepScheduler_SDE_karras",
-        "old man, jacket"
+        "UniPCMultistepScheduler",
+        "closeup, jacket, lower body, arms crossed",
+        "bad quality"
       ]
     },
     {
-      "id": 73,
-      "type": "ImagePadForOutpaintMasked",
-      "pos": [
-        973,
-        1563
-      ],
-      "size": {
-        "0": 315,
-        "1": 174
-      },
-      "flags": {},
-      "order": 13,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 151
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            152
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": [
-            155
-          ],
-          "shape": 3,
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImagePadForOutpaintMasked"
-      },
-      "widgets_values": [
-        0,
-        0,
-        0,
-        256,
-        0
-      ]
-    },
-    {
-      "id": 1,
-      "type": "brushnet_model_loader",
-      "pos": [
-        688,
-        402
-      ],
-      "size": {
-        "0": 337,
-        "1": 98
-      },
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 1,
-          "slot_index": 0
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 3
-        }
-      ],
-      "outputs": [
-        {
-          "name": "brushnet",
-          "type": "BRUSHNET",
-          "links": [
-            4,
-            144,
-            154
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "brushnet_model_loader"
-      },
-      "widgets_values": [
-        "brushnet_segmentation_mask"
-      ]
-    },
-    {
-      "id": 71,
-      "type": "PreviewImage",
-      "pos": [
-        2600,
-        230
-      ],
-      "size": [
-        704.5071846093756,
-        839.885078935547
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 150,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
-      "id": 72,
+      "id": 77,
       "type": "brushnet_sampler",
       "pos": [
-        1322,
-        1531
+        1379,
+        1690
       ],
-      "size": {
-        "0": 399,
-        "1": 299
-      },
+      "size": [
+        393.5482482910156,
+        477.4864196777344
+      ],
       "flags": {},
       "order": 14,
       "mode": 0,
@@ -539,20 +694,17 @@
         {
           "name": "brushnet",
           "type": "BRUSHNET",
-          "link": 154,
-          "slot_index": 0
+          "link": 166
         },
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 152,
-          "slot_index": 1
+          "link": 167
         },
         {
           "name": "mask",
           "type": "MASK",
-          "link": 155,
-          "slot_index": 2
+          "link": 168
         }
       ],
       "outputs": [
@@ -560,171 +712,27 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            153
+            169
           ],
-          "shape": 3,
-          "slot_index": 0
+          "shape": 3
         }
       ],
       "properties": {
         "Node name for S&R": "brushnet_sampler"
       },
       "widgets_values": [
-        32,
+        25,
+        7.5,
         1,
-        37,
-        "fixed",
-        "DPMSolverMultistepScheduler_SDE_karras",
-        "old man, pants"
-      ]
-    },
-    {
-      "id": 5,
-      "type": "brushnet_sampler",
-      "pos": [
-        1153,
-        386
-      ],
-      "size": {
-        "0": 399,
-        "1": 299
-      },
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "brushnet",
-          "type": "BRUSHNET",
-          "link": 4,
-          "slot_index": 0
-        },
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 131,
-          "slot_index": 1
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": 132
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            86,
-            147
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "brushnet_sampler"
-      },
-      "widgets_values": [
-        32,
+        0,
         1,
-        35,
+        false,
+        0,
+        128,
         "fixed",
-        "DPMSolverMultistepScheduler_SDE_karras",
-        "seaside, landscape, old man, jacket"
-      ]
-    },
-    {
-      "id": 74,
-      "type": "PreviewImage",
-      "pos": [
-        3320,
-        230
-      ],
-      "size": [
-        786.0991246093758,
-        1164.8186089355472
-      ],
-      "flags": {},
-      "order": 15,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 153,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
-      "id": 47,
-      "type": "PreviewImage",
-      "pos": [
-        1970,
-        240
-      ],
-      "size": [
-        598.1146253564457,
-        551.4878638635256
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 86,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
-      "id": 7,
-      "type": "LoadImage",
-      "pos": [
-        1630,
-        190
-      ],
-      "size": {
-        "0": 316,
-        "1": 405
-      },
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            39
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": [],
-          "shape": 3,
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "ComfyUI_temp_cytrk_00031_ (2).png",
-        "image"
+        "UniPCMultistepScheduler",
+        "old man, chair",
+        "bad quality"
       ]
     }
   ],
@@ -754,26 +762,10 @@
       "VAE"
     ],
     [
-      4,
-      1,
-      0,
-      5,
-      0,
-      "BRUSHNET"
-    ],
-    [
       39,
       7,
       0,
       24,
-      0,
-      "IMAGE"
-    ],
-    [
-      86,
-      5,
-      0,
-      47,
       0,
       "IMAGE"
     ],
@@ -802,22 +794,6 @@
       "IMAGE"
     ],
     [
-      131,
-      66,
-      0,
-      5,
-      1,
-      "IMAGE"
-    ],
-    [
-      132,
-      66,
-      1,
-      5,
-      2,
-      "MASK"
-    ],
-    [
       135,
       66,
       1,
@@ -834,84 +810,116 @@
       "MASK"
     ],
     [
-      144,
+      156,
       1,
       0,
-      69,
+      75,
       0,
       "BRUSHNET"
     ],
     [
-      147,
-      5,
+      157,
+      66,
       0,
-      70,
-      0,
-      "IMAGE"
-    ],
-    [
-      148,
-      70,
-      0,
-      69,
+      75,
       1,
       "IMAGE"
     ],
     [
-      149,
-      70,
+      158,
+      66,
       1,
-      69,
+      75,
       2,
       "MASK"
     ],
     [
-      150,
-      69,
+      159,
+      75,
+      0,
+      47,
+      0,
+      "IMAGE"
+    ],
+    [
+      160,
+      75,
+      0,
+      70,
+      0,
+      "IMAGE"
+    ],
+    [
+      161,
+      1,
+      0,
+      76,
+      0,
+      "BRUSHNET"
+    ],
+    [
+      162,
+      70,
+      0,
+      76,
+      1,
+      "IMAGE"
+    ],
+    [
+      163,
+      70,
+      1,
+      76,
+      2,
+      "MASK"
+    ],
+    [
+      164,
+      76,
       0,
       71,
       0,
       "IMAGE"
     ],
     [
-      151,
-      69,
+      165,
+      76,
       0,
       73,
       0,
       "IMAGE"
     ],
     [
-      152,
-      73,
-      0,
-      72,
-      1,
-      "IMAGE"
-    ],
-    [
-      153,
-      72,
-      0,
-      74,
-      0,
-      "IMAGE"
-    ],
-    [
-      154,
+      166,
       1,
       0,
-      72,
+      77,
       0,
       "BRUSHNET"
     ],
     [
-      155,
+      167,
+      73,
+      0,
+      77,
+      1,
+      "IMAGE"
+    ],
+    [
+      168,
       73,
       1,
-      72,
+      77,
       2,
       "MASK"
+    ],
+    [
+      169,
+      77,
+      0,
+      74,
+      0,
+      "IMAGE"
     ]
   ],
   "groups": [],
