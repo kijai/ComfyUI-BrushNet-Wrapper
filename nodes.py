@@ -14,6 +14,7 @@ try:
         PNDMScheduler,
         UniPCMultistepScheduler
     )
+    from .scheduling_tcd import TCDScheduler
     from diffusers.loaders.single_file_utils import (
         convert_ldm_vae_checkpoint, 
         convert_ldm_unet_checkpoint, 
@@ -181,7 +182,8 @@ class brushnet_sampler:
                     "DEISMultistepScheduler",
                     "EulerDiscreteScheduler",
                     "EulerAncestralDiscreteScheduler",
-                    "UniPCMultistepScheduler"
+                    "UniPCMultistepScheduler",
+                    "TCDScheduler"
                 ], {
                     "default": "UniPCMultistepScheduler"
                 }),
@@ -235,6 +237,8 @@ class brushnet_sampler:
             noise_scheduler = EulerAncestralDiscreteScheduler(**scheduler_config)
         elif scheduler == "UniPCMultistepScheduler":
             noise_scheduler = UniPCMultistepScheduler(**scheduler_config)
+        elif scheduler == "TCDScheduler":
+            noise_scheduler = TCDScheduler(**scheduler_config)
         pipe.scheduler = noise_scheduler
 
         B, H, W, C = image.shape
@@ -342,7 +346,8 @@ class brushnet_sampler_ella:
                     "DEISMultistepScheduler",
                     "EulerDiscreteScheduler",
                     "EulerAncestralDiscreteScheduler",
-                    "UniPCMultistepScheduler"
+                    "UniPCMultistepScheduler",
+                    "TCDScheduler"
                 ], {
                     "default": "UniPCMultistepScheduler"
                 }),
@@ -395,6 +400,8 @@ class brushnet_sampler_ella:
             noise_scheduler = EulerAncestralDiscreteScheduler(**scheduler_config)
         elif scheduler == "UniPCMultistepScheduler":
             noise_scheduler = UniPCMultistepScheduler(**scheduler_config)
+        elif scheduler == "TCDScheduler":
+            noise_scheduler = TCDScheduler(**scheduler_config)
         pipe.scheduler = noise_scheduler
 
         B, H, W, C = image.shape
