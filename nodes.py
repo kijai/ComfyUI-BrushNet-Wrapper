@@ -62,8 +62,6 @@ class brushnet_model_loader:
     def loadmodel(self, model, clip, vae, brushnet_model):
         mm.soft_empty_cache()
         dtype = mm.unet_dtype()
-        vae_dtype = mm.vae_dtype()
-        device = mm.get_torch_device()
 
         custom_config = {
             "model": model,
@@ -111,6 +109,7 @@ class brushnet_model_loader:
             converted_vae = convert_ldm_vae_checkpoint(sd, converted_vae_config)
             vae = AutoencoderKL(**converted_vae_config)
             vae.load_state_dict(converted_vae, strict=False)
+            vae.to(dtype)
 
             pbar.update(1)
             # 2. unet
@@ -119,24 +118,18 @@ class brushnet_model_loader:
             
             unet = UNet2DConditionModel(**converted_unet_config)
             unet.load_state_dict(converted_unet, strict=False)
-            unet = unet.to(device)
+            unet = unet.to(dtype)
 
             pbar.update(1)
             # 3. text_model
             print("loading text model")
             text_encoder = create_text_encoder_from_ldm_clip_checkpoint("openai/clip-vit-large-patch14",sd)
-            scheduler_config = {
-                "num_train_timesteps": 1000,
-                "beta_start":    0.00085,
-                "beta_end":      0.012,
-                "beta_schedule": "scaled_linear",
-                "steps_offset": 1
-            }
+            text_encoder.to(dtype)
+
             # 4. tokenizer
             tokenizer_path = os.path.join(script_directory, "configs/tokenizer")
             tokenizer = CLIPTokenizer.from_pretrained(tokenizer_path)
 
-            scheduler=DPMSolverMultistepScheduler(**scheduler_config)
             pbar.update(1)
             del sd
           
@@ -145,13 +138,13 @@ class brushnet_model_loader:
                 vae=vae, 
                 text_encoder=text_encoder, 
                 tokenizer=tokenizer, 
-                scheduler=scheduler,
+                scheduler=None,
                 brushnet=brushnet,
                 requires_safety_checker=False, 
                 safety_checker=None,
                 feature_extractor=None
             )   
-
+            self.pipe.enable_model_cpu_offload()
             pbar.update(1)
             brushnet = {
                 "pipe": self.pipe,
@@ -197,9 +190,8 @@ class brushnet_sampler:
         device = mm.get_torch_device()
         mm.unload_all_models()
         mm.soft_empty_cache()
-        dtype = mm.unet_dtype()
         pipe=brushnet["pipe"]
-        pipe.to(device, dtype=dtype)
+        #pipe.to(device, dtype=dtype)
 
         scheduler_config = {
                 "num_train_timesteps": 1000,
@@ -235,6 +227,7 @@ class brushnet_sampler:
         B, H, W, C = image.shape
         image = image.permute(0, 3, 1, 2).to(device)
 
+        #handle masks
         if len(mask.shape) == 2:
             mask = mask.unsqueeze(0)
         mask = mask.to(device)
@@ -245,26 +238,27 @@ class brushnet_sampler:
 
         image = image * (1-resized_mask)
 
+        #add prompt
         prompt_list = []
         prompt_list.append(prompt)
         if len(prompt_list) < B:
             prompt_list += [prompt_list[-1]] * (B - len(prompt_list))
-            
-        autocast_condition = (dtype != torch.float32) and not mm.is_device_mps(device)
-        with torch.autocast(mm.get_autocast_device(device), dtype=dtype) if autocast_condition else nullcontext():
-            generator = torch.Generator(device).manual_seed(seed)
-            images = pipe(
-                prompt_list, 
-                image=image, 
-                mask=resized_mask, 
-                num_inference_steps=steps, 
-                generator=generator,
-                brushnet_conditioning_scale=guidance_scale,
-                output_type="pt"
-            ).images
 
-            image_out = images.permute(0, 2, 3, 1).cpu().float()
-            return (image_out,)
+        #sample    
+        generator = torch.Generator(device).manual_seed(seed)
+        
+        images = pipe(
+            prompt_list, 
+            image=image, 
+            mask=resized_mask, 
+            num_inference_steps=steps, 
+            generator=generator,
+            brushnet_conditioning_scale=guidance_scale,
+            output_type="pt"
+        ).images
+
+        image_out = images.permute(0, 2, 3, 1).cpu().float()
+        return (image_out,)
 
 
 NODE_CLASS_MAPPINGS = {
