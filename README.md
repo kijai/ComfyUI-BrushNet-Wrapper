@@ -1,5 +1,6 @@
 # ComfyUI wrapper nodes to use the Diffusers implementation of BrushNet
 
+![image](https://github.com/kijai/ComfyUI-BrushNet-Wrapper/assets/40791699/9a5e75d5-ee38-4a36-9f20-293ed0fb78a0)
 
 
 # Installing
