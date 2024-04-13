@@ -257,17 +257,20 @@ class brushnet_sampler:
 
         B, H, W, C = image.shape
         image = image.permute(0, 3, 1, 2).to(device)
-
+        print("mask_shape: ",mask.shape)
         #handle masks
         if len(mask.shape) == 2:
             mask = mask.unsqueeze(0)
+        mask = F.interpolate(mask.unsqueeze(1), size=[H, W], mode='nearest')
         mask = mask.to(device)
+        print("mask_shape: ",mask.shape)
         if mask.shape[0] < B:
             repeat_times = B // mask.shape[0]
             mask = mask.repeat(repeat_times, 1, 1, 1)
-        resized_mask = F.interpolate(mask.unsqueeze(1), size=[H, W], mode='nearest').squeeze(1)
-
-        image = image * (1-resized_mask)
+       
+        print("mask_shape: ",mask.shape)
+        print("image_shape: ", image.shape)
+        image = image * (1-mask)
 
         if 'ip_adapter' in brushnet:
             print("Using IP adapter")
@@ -277,6 +280,9 @@ class brushnet_sampler:
                 negative_prompt=n_prompt,
                 weight=[brushnet['ip_adapter_weight']]
             )
+            prompt_embeds = torch.repeat_interleave(prompt_embeds, B, dim=0)
+            negative_prompt_embeds = torch.repeat_interleave(negative_prompt_embeds, B, dim=0)
+            print(prompt_embeds.shape, negative_prompt_embeds.shape)
             use_ipadapter = True
             prompt_list = None
             n_prompt_list = None
@@ -304,7 +310,7 @@ class brushnet_sampler:
             ipadapter_image=None,
             prompt_embeds=prompt_embeds if use_ipadapter else None,
             negative_prompt_embeds=negative_prompt_embeds if use_ipadapter else None,
-            mask=resized_mask, 
+            mask=mask, 
             num_inference_steps=steps, 
             generator=generator,
             guidance_scale=cfg,
