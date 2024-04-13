@@ -25,9 +25,16 @@ try:
 except:
     raise ImportError("Diffusers version too old. Please update to 0.27.2 minimum.")
 
+
 from .brushnet.pipeline_brushnet import StableDiffusionBrushNetPipeline
 from .brushnet.brushnet import BrushNetModel
 from .brushnet.unet_2d_condition import UNet2DConditionModel
+
+from contextlib import nullcontext
+from diffusers.utils import is_accelerate_available
+if is_accelerate_available():
+    from accelerate import init_empty_weights
+    from accelerate.utils import set_module_tensor_to_device
 
 import safetensors.torch
 from omegaconf import OmegaConf
@@ -39,7 +46,7 @@ import folder_paths
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 IS_MODEL_CPU_OFFLOAD_ENABLED = False
-    
+
 class brushnet_model_loader:
     @classmethod
     def INPUT_TYPES(s):
@@ -65,6 +72,7 @@ class brushnet_model_loader:
     def loadmodel(self, model, clip, vae, brushnet_model):
         mm.soft_empty_cache()
         dtype = mm.unet_dtype()
+        device = mm.get_torch_device()
 
         custom_config = {
             "model": model,
@@ -94,38 +102,44 @@ class brushnet_model_loader:
                                   local_dir_use_symlinks=False
                                   )
 
-            brushnet = BrushNetModel(**brushnet_config)
-            brushnet_sd = comfy.utils.load_torch_file(checkpoint_path)
-            brushnet.load_state_dict(brushnet_sd)
-            brushnet.to(dtype)
+            #create models   
+            with (init_empty_weights() if is_accelerate_available() else nullcontext()):
+                brushnet = BrushNetModel(**brushnet_config)
+
+                converted_vae_config = create_vae_diffusers_config(original_config, image_size=512)
+                new_vae = AutoencoderKL(**converted_vae_config)
+
+                converted_unet_config = create_unet_diffusers_config(original_config, image_size=512)
+                new_unet = UNet2DConditionModel(**converted_unet_config)
 
             pbar.update(1)
+
+            #load weights
+            brushnet_sd = comfy.utils.load_torch_file(checkpoint_path) 
+            for key in brushnet_sd:
+                set_module_tensor_to_device(brushnet, key, device=device, dtype=dtype, value=brushnet_sd[key])
+            del brushnet_sd
             
             clip_sd = None
             load_models = [model]
             load_models.append(clip.load_model())
             clip_sd = clip.get_sd()
-            
             comfy.model_management.load_models_gpu(load_models)
             sd = model.model.state_dict_for_saving(clip_sd, vae.get_sd(), None)
 
-            # 1. vae
-            converted_vae_config = create_vae_diffusers_config(original_config, image_size=512)
             converted_vae = convert_ldm_vae_checkpoint(sd, converted_vae_config)
-            vae = AutoencoderKL(**converted_vae_config)
-            vae.load_state_dict(converted_vae, strict=False)
-            vae.to(dtype)
+            for key in converted_vae:
+                set_module_tensor_to_device(new_vae, key, device=device, dtype=dtype, value=converted_vae[key])
+            del converted_vae
+            pbar.update(1)
+
+            converted_unet = convert_ldm_unet_checkpoint(sd, converted_unet_config)   
+            for key in converted_unet:
+               set_module_tensor_to_device(new_unet, key, device=device, dtype=dtype, value=converted_unet[key])
+            del converted_unet
 
             pbar.update(1)
-            # 2. unet
-            converted_unet_config = create_unet_diffusers_config(original_config, image_size=512)
-            converted_unet = convert_ldm_unet_checkpoint(sd, converted_unet_config)
-            
-            unet = UNet2DConditionModel(**converted_unet_config)
-            unet.load_state_dict(converted_unet, strict=False)
-            unet = unet.to(dtype)
 
-            pbar.update(1)
             # 3. text_model
             print("loading text model")
             text_encoder = create_text_encoder_from_ldm_clip_checkpoint("openai/clip-vit-large-patch14",sd)
@@ -139,8 +153,8 @@ class brushnet_model_loader:
             del sd
           
             self.pipe = StableDiffusionBrushNetPipeline(
-                unet=unet, 
-                vae=vae, 
+                unet=new_unet, 
+                vae=new_vae, 
                 text_encoder=text_encoder, 
                 tokenizer=tokenizer, 
                 scheduler=None,
@@ -255,25 +269,41 @@ class brushnet_sampler:
 
         image = image * (1-resized_mask)
 
-        #add prompt
-        prompt_list = []
-        prompt_list.append(prompt)
-        if len(prompt_list) < B:
-            prompt_list += [prompt_list[-1]] * (B - len(prompt_list))
+        if 'ip_adapter' in brushnet:
+            print("Using IP adapter")
+            prompt_embeds, negative_prompt_embeds = brushnet['ip_adapter'].get_prompt_embeds(
+                brushnet['ip_adapter_image'],
+                prompt=prompt,
+                negative_prompt=n_prompt,
+                weight=[brushnet['ip_adapter_weight']]
+            )
+            use_ipadapter = True
+            prompt_list = None
+            n_prompt_list = None
+        else:
+            prompt_list = []
+            prompt_list.append(prompt)
+            if len(prompt_list) < B:
+                prompt_list += [prompt_list[-1]] * (B - len(prompt_list))
 
-        n_prompt_list = []
-        n_prompt_list.append(n_prompt)
-        if len(n_prompt_list) < B:
-            n_prompt_list += [n_prompt_list[-1]] * (B - len(n_prompt_list))
+            n_prompt_list = []
+            n_prompt_list.append(n_prompt)
+            if len(n_prompt_list) < B:
+                n_prompt_list += [n_prompt_list[-1]] * (B - len(n_prompt_list))
+
+            prompt_embeds, negative_prompt_embeds = None, None
+            use_ipadapter = False
 
         #sample    
         generator = torch.Generator(device).manual_seed(seed)
-        print(prompt_list)
+
         images = pipe(
-            prompt_list,
+            prompt=prompt_list,
             negative_prompt=n_prompt_list,
             image=image,
             ipadapter_image=None,
+            prompt_embeds=prompt_embeds if use_ipadapter else None,
+            negative_prompt_embeds=negative_prompt_embeds if use_ipadapter else None,
             mask=resized_mask, 
             num_inference_steps=steps, 
             generator=generator,
@@ -301,7 +331,7 @@ class brushnet_ella_loader:
     RETURN_TYPES = ("BRUSHNET",)
     RETURN_NAMES = ("brushnet",)
     FUNCTION = "loadmodel"
-    CATEGORY = "ELLA-Wrapper"
+    CATEGORY = "BrushNetWrapper"
 
     def loadmodel(self, brushnet):
         print("loading ELLA")
@@ -319,7 +349,50 @@ class brushnet_ella_loader:
         brushnet['pipe'].unet = ella_unet
         
         return (brushnet,)      
-      
+    
+class brushnet_ipadapter_matteo:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "brushnet": ("BRUSHNET",),
+            "image": ("IMAGE",),
+            "ipadapter": (folder_paths.get_filename_list("ipadapter"), ),
+            "clip_vision" : (folder_paths.get_filename_list("clip_vision"), ),
+            "weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
+            },
+        }
+
+    RETURN_TYPES = ("BRUSHNET",)
+    RETURN_NAMES = ("brushnet",)
+    FUNCTION = "loadmodel"
+    CATEGORY = "BrushNetWrapper"
+
+    def loadmodel(self, image, brushnet, ipadapter, clip_vision, weight):
+        from .ip_adapter.ip_adapter import IPAdapter
+        from transformers import CLIPVisionConfig, CLIPVisionModelWithProjection
+        device = mm.get_torch_device()
+        dtype = mm.unet_dtype()
+        ipadapter_path = folder_paths.get_full_path("ipadapter", ipadapter)
+
+        clip_vision_path = folder_paths.get_full_path("clip_vision", clip_vision)
+        
+        clip_vision_config_path = OmegaConf.load(os.path.join(script_directory, f"configs/clip_vision.json"))
+        clip_vision_config = CLIPVisionConfig(**clip_vision_config_path)
+        with (init_empty_weights() if is_accelerate_available() else nullcontext()):
+            image_encoder = CLIPVisionModelWithProjection(clip_vision_config)
+        clip_vision_sd = comfy.utils.load_torch_file(clip_vision_path)
+        for key in clip_vision_sd:
+            set_module_tensor_to_device(image_encoder, key, device=device, dtype=dtype, value=clip_vision_sd[key])
+       
+        brushnet['pipe'].to(device)
+        ip_adapter = IPAdapter(brushnet['pipe'], ipadapter_path, image_encoder, device=device)
+        image = image.permute(0, 3, 1, 2).to(device)
+        
+        brushnet['ip_adapter'] = ip_adapter
+        brushnet['ip_adapter_image'] = image
+        brushnet['ip_adapter_weight'] = weight
+        return (brushnet,)         
+
 class brushnet_sampler_ella:
     @classmethod
     def INPUT_TYPES(s):
@@ -447,11 +520,13 @@ NODE_CLASS_MAPPINGS = {
     "brushnet_model_loader": brushnet_model_loader,
     "brushnet_sampler": brushnet_sampler,
     "brushnet_sampler_ella": brushnet_sampler_ella,
-    "brushnet_ella_loader": brushnet_ella_loader
+    "brushnet_ella_loader": brushnet_ella_loader,
+    "brushnet_ipadapter_matteo": brushnet_ipadapter_matteo,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "brushnet_model_loader": "BrushNet Model Loader",
     "brushnet_sampler": "BrushNet Sampler",
     "brushnet_sampler_ella": "BrushNet Sampler (ELLA)",
-    "brushnet_ella_loader": "BrushNet ELLA Loader"
+    "brushnet_ella_loader": "BrushNet ELLA Loader",
+    "brushnet_ipadapter_matteo": "BrushNet IP Adapter (Matteo)",
 }
