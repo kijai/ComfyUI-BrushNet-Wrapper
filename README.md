@@ -19,3 +19,7 @@ or if you use portable (run this in ComfyUI_windows_portable -folder):
 Models are automatically downloaded from here: https://huggingface.co/Kijai/BrushNet-fp16/tree/main
 
 to `ComfyUI/models/brushnet`
+
+Original repository:
+
+https://github.com/TencentARC/BrushNet
