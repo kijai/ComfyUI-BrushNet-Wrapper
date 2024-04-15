@@ -31,8 +31,22 @@ class IPAdapter:
         self.dtype = dtype
         
         # load ip adapter model
-        ipadapter_model = torch.load(ipadapter_ckpt_path, map_location="cpu")
+        from comfy.utils import load_torch_file
+        ipadapter_model = load_torch_file(ipadapter_ckpt_path, safe_load=True)
 
+        if ipadapter_ckpt_path.lower().endswith(".safetensors"):
+            st_model = {"image_proj": {}, "ip_adapter": {}}
+            for key in ipadapter_model.keys():
+                if key.startswith("image_proj."):
+                    st_model["image_proj"][key.replace("image_proj.", "")] = ipadapter_model[key]
+                elif key.startswith("ip_adapter."):
+                    st_model["ip_adapter"][key.replace("ip_adapter.", "")] = ipadapter_model[key]
+            ipadapter_model = st_model
+            del st_model
+
+        if not "ip_adapter" in ipadapter_model.keys() or not ipadapter_model["ip_adapter"]:
+            raise Exception("invalid IPAdapter model {}".format(ipadapter_ckpt_path))
+           
         # detect features
         self.is_plus = "latents" in ipadapter_model["image_proj"]
         self.output_cross_attention_dim = ipadapter_model["ip_adapter"]["1.to_k_ip.weight"].shape[1]
