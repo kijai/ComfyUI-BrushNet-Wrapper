@@ -406,7 +406,7 @@ class powerpaint_brushnet_sampler(brushnet_sampler):
                     "default": "text-guided"
                 })
         base_inputs["required"]["fitting_degree"] = (
-            "FLOAT", {"default": 10, "min": 0.3, "max": 1.0, "step": 0.05},
+            "FLOAT", {"default": 1.0, "min": 0.3, "max": 1.0, "step": 0.05},
             )
         print(base_inputs)
         return base_inputs
