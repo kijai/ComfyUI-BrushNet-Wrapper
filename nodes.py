@@ -224,7 +224,7 @@ class brushnet_model_loader:
             brushnet = {
                 "pipe": self.pipe,
             }
-            if ip_adapter is not None:
+            if ip_adapter is not None and "powerpaint" not in checkpoint_path:
                 from .ip_adapter.ip_adapter import IPAdapter
                 brushnet['ip_adapter_weight'] = ip_adapter['ip_adapter_weight']
                 brushnet['ip_adapter_image'] = ip_adapter['ip_adapter_image']
