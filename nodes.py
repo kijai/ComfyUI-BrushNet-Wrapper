@@ -30,6 +30,10 @@ from .brushnet.pipeline_brushnet import StableDiffusionBrushNetPipeline
 from .brushnet.brushnet import BrushNetModel
 from .brushnet.unet_2d_condition import UNet2DConditionModel
 
+from .powerpaint.pipeline_PowerPaint_Brushnet_CA import StableDiffusionPowerPaintBrushNetPipeline
+from .powerpaint.utils import TokenizerWrapper, add_tokens
+from .powerpaint.pipeline_PowerPaint_Brushnet_CA import BrushNetModel as PowerPaintBrushNetModel
+
 from contextlib import nullcontext
 from diffusers.utils import is_accelerate_available
 if is_accelerate_available():
@@ -61,6 +65,7 @@ class brushnet_model_loader:
                 [
                     "brushnet_segmentation_mask",
                     "brushnet_random_mask",
+                    "powerpaint_v2_brushnet",
                 ], {
                     "default": "brushnet_segmentation_mask"
                 }),
@@ -98,36 +103,45 @@ class brushnet_model_loader:
 
             brushnet_model_folder = os.path.join(folder_paths.models_dir,"brushnet")
             checkpoint_path = os.path.join(brushnet_model_folder, f"{brushnet_model}_fp16.safetensors")
+            powerpaint_text_encoder_path = "powerpaint_brushnet_text_encoder_fp16.safetensors"
+  
             print(f"Loading BrushNet from {checkpoint_path}")
             
             if not os.path.exists(checkpoint_path):
                 print(f"Selected model: {checkpoint_path} not found, downloading...")
                 from huggingface_hub import snapshot_download
+                allow_patterns = [f"*{brushnet_model}*"]
+                if "powerpaint" in checkpoint_path:
+                    allow_patterns.append("*text_encoder*")
+                    print(allow_patterns)
                 snapshot_download(repo_id="Kijai/BrushNet-fp16", 
-                                  allow_patterns=[f"*{brushnet_model}*"], 
+                                  allow_patterns=allow_patterns, 
                                   local_dir=brushnet_model_folder, 
                                   local_dir_use_symlinks=False
                                   )
 
             #create models   
             with (init_empty_weights() if is_accelerate_available() else nullcontext()):
-                brushnet = BrushNetModel(**brushnet_config)
-
                 converted_vae_config = create_vae_diffusers_config(original_config, image_size=512)
                 new_vae = AutoencoderKL(**converted_vae_config)
 
                 converted_unet_config = create_unet_diffusers_config(original_config, image_size=512)
                 new_unet = UNet2DConditionModel(**converted_unet_config)
 
+                if "powerpaint" in checkpoint_path:
+                    brushnet = PowerPaintBrushNetModel.from_unet(new_unet)
+                else:
+                    brushnet = BrushNetModel(**brushnet_config)
+                
             pbar.update(1)
-
+            
             #load weights
             brushnet_sd = comfy.utils.load_torch_file(checkpoint_path)
             if is_accelerate_available():
                 for key in brushnet_sd:
                     set_module_tensor_to_device(brushnet, key, device=device, dtype=dtype, value=brushnet_sd[key])
             else:
-                brushnet.load_state_dict(brushnet_sd)
+                brushnet.load_state_dict(brushnet_sd, strict=False)
             del brushnet_sd
             
             clip_sd = None
@@ -163,23 +177,50 @@ class brushnet_model_loader:
 
             # 4. tokenizer
             tokenizer_path = os.path.join(script_directory, "configs/tokenizer")
-            tokenizer = CLIPTokenizer.from_pretrained(tokenizer_path)
+            
+            if "powerpaint" in checkpoint_path:
+                tokenizer = TokenizerWrapper(from_pretrained=tokenizer_path)
+                add_tokens(
+                    tokenizer=tokenizer,
+                    text_encoder=text_encoder,
+                    placeholder_tokens=['P_ctxt', 'P_shape', 'P_obj'],
+                    initialize_tokens=['a', 'a', 'a'],
+                    num_vectors_per_token=10)
+                
+                checkpoint_path = os.path.join(brushnet_model_folder, powerpaint_text_encoder_path)
+                text_encoder_sd = comfy.utils.load_torch_file(checkpoint_path)
+                text_encoder.load_state_dict(text_encoder_sd, strict=False)
+                
+                self.pipe = StableDiffusionPowerPaintBrushNetPipeline(
+                    unet=new_unet, 
+                    vae=new_vae, 
+                    text_encoder=text_encoder,
+                    text_encoder_brushnet=text_encoder, 
+                    tokenizer=tokenizer, 
+                    scheduler=None,
+                    brushnet=brushnet,
+                    requires_safety_checker=False, 
+                    safety_checker=None,
+                    feature_extractor=None
+            )
+            else:
+                tokenizer = CLIPTokenizer.from_pretrained(tokenizer_path)
+                self.pipe = StableDiffusionBrushNetPipeline(
+                    unet=new_unet, 
+                    vae=new_vae, 
+                    text_encoder=text_encoder,
+                    tokenizer=tokenizer, 
+                    scheduler=None,
+                    brushnet=brushnet,
+                    requires_safety_checker=False, 
+                    safety_checker=None,
+                    feature_extractor=None
+                )
 
             pbar.update(1)
             del sd
             
-          
-            self.pipe = StableDiffusionBrushNetPipeline(
-                unet=new_unet, 
-                vae=new_vae, 
-                text_encoder=text_encoder, 
-                tokenizer=tokenizer, 
-                scheduler=None,
-                brushnet=brushnet,
-                requires_safety_checker=False, 
-                safety_checker=None,
-                feature_extractor=None
-            )   
+
             brushnet = {
                 "pipe": self.pipe,
             }
@@ -347,6 +388,181 @@ class brushnet_sampler:
         image_out = images.permute(0, 2, 3, 1).cpu().float()
         return (image_out,)
 
+class powerpaint_brushnet_sampler(brushnet_sampler):
+    @classmethod
+    def INPUT_TYPES(s):
+        # Call the parent class's INPUT_TYPES method to get the base inputs
+        base_inputs = super().INPUT_TYPES()
+        
+        # Add or modify inputs as needed
+        base_inputs["required"]["task"] = (
+                [
+                    "text-guided",
+                    "object-removal",
+                    "context-aware",
+                    "shape-guided",
+                    "image-outpainting",
+                ], {
+                    "default": "text-guided"
+                })
+        base_inputs["required"]["fitting_degree"] = (
+            "FLOAT", {"default": 10, "min": 0.3, "max": 1.0, "step": 0.05},
+            )
+        print(base_inputs)
+        return base_inputs
+
+    def process(self, brushnet, image, mask, prompt, n_prompt, steps, cfg, guess_mode, clip_skip,
+                cfg_brushnet, control_guidance_start, control_guidance_end, seed, scheduler, task, fitting_degree):
+        # Call the parent class's process method to reuse its functionality
+        
+        device = mm.get_torch_device()
+        mm.soft_empty_cache()
+        pipe=brushnet["pipe"]
+        global IS_MODEL_CPU_OFFLOAD_ENABLED
+        if not IS_MODEL_CPU_OFFLOAD_ENABLED:
+            pipe.enable_model_cpu_offload()
+            IS_MODEL_CPU_OFFLOAD_ENABLED = True
+
+        scheduler_config = {
+                "num_train_timesteps": 1000,
+                "beta_start":    0.00085,
+                "beta_end":      0.012,
+                "beta_schedule": "scaled_linear",
+                "steps_offset": 1,
+            }
+        if scheduler == "DPMSolverMultistepScheduler":
+            noise_scheduler = DPMSolverMultistepScheduler(**scheduler_config)
+        elif scheduler == "DPMSolverMultistepScheduler_SDE_karras":
+            scheduler_config.update({"algorithm_type": "sde-dpmsolver++"})
+            scheduler_config.update({"use_karras_sigmas": True})
+            noise_scheduler = DPMSolverMultistepScheduler(**scheduler_config)
+        elif scheduler == "DDPMScheduler":
+            noise_scheduler = DDPMScheduler(**scheduler_config)
+        elif scheduler == "LCMScheduler":
+            noise_scheduler = LCMScheduler(**scheduler_config)
+        elif scheduler == "PNDMScheduler":
+            scheduler_config.update({"set_alpha_to_one": False})
+            scheduler_config.update({"trained_betas": None})
+            noise_scheduler = PNDMScheduler(**scheduler_config)
+        elif scheduler == "DEISMultistepScheduler":
+            noise_scheduler = DEISMultistepScheduler(**scheduler_config)
+        elif scheduler == "EulerDiscreteScheduler":
+            noise_scheduler = EulerDiscreteScheduler(**scheduler_config)
+        elif scheduler == "EulerAncestralDiscreteScheduler":
+            noise_scheduler = EulerAncestralDiscreteScheduler(**scheduler_config)
+        elif scheduler == "UniPCMultistepScheduler":
+            noise_scheduler = UniPCMultistepScheduler(**scheduler_config)
+        elif scheduler == "TCDScheduler":
+            noise_scheduler = TCDScheduler(**scheduler_config)
+        pipe.scheduler = noise_scheduler
+
+        
+
+        B, H, W, C = image.shape
+        image = image.permute(0, 3, 1, 2).to(device)
+        
+        #handle masks
+        if len(mask.shape) == 2:
+            mask = mask.unsqueeze(0)
+        mask = F.interpolate(mask.unsqueeze(1), size=[H, W], mode='nearest')
+        mask = mask.to(device)
+        
+        if mask.shape[0] < B:
+            repeat_times = B // mask.shape[0]
+            mask = mask.repeat(repeat_times, 1, 1, 1)
+       
+        image = image * (1-mask)
+
+        if 'ip_adapter' in brushnet:
+            print("Using IP adapter")
+            prompt_embeds, negative_prompt_embeds = brushnet['ip_adapter'].get_prompt_embeds(
+                brushnet['ip_adapter_image'],
+                prompt=prompt,
+                negative_prompt=n_prompt,
+                weight=[brushnet['ip_adapter_weight']]
+            )
+            prompt_embeds = torch.repeat_interleave(prompt_embeds, B, dim=0)
+            negative_prompt_embeds = torch.repeat_interleave(negative_prompt_embeds, B, dim=0)
+            
+            use_ipadapter = True
+            prompt_list = None
+            n_prompt_list = None
+        else:
+            prompt_list = []
+            prompt_list.append(prompt)
+            if len(prompt_list) < B:
+                prompt_list += [prompt_list[-1]] * (B - len(prompt_list))
+
+            n_prompt_list = []
+            n_prompt_list.append(n_prompt)
+            if len(n_prompt_list) < B:
+                n_prompt_list += [n_prompt_list[-1]] * (B - len(n_prompt_list))
+
+            prompt_embeds, negative_prompt_embeds = None, None
+            use_ipadapter = False
+
+        #sample    
+        generator = torch.Generator(device).manual_seed(seed)
+        promptA, promptB, negative_promptA, negative_promptB = add_task(task)
+
+        images = pipe(
+            promptA = promptA, 
+            promptB = promptB,
+            promptU = prompt,
+            negative_promptA = negative_promptA,
+            negative_promptB = negative_promptB,
+            negative_promptU = n_prompt,
+            tradoff=fitting_degree,
+            tradoff_nag=fitting_degree,
+            image=image,
+            ipadapter_image=None, 
+            prompt_embeds= None,
+            negative_prompt_embeds= None,
+            mask=mask, 
+            num_inference_steps=steps, 
+            generator=generator,
+            guidance_scale=cfg,
+            guess_mode=guess_mode,
+            clip_skip=clip_skip if clip_skip > 0 else None,
+            brushnet_conditioning_scale=cfg_brushnet,
+            control_guidance_start=control_guidance_start,
+            control_guidance_end=control_guidance_end,
+            output_type="pt",
+            ).images
+        
+        image_out = images.permute(0, 2, 3, 1).cpu().float()
+        return (image_out,)
+
+    
+def add_task(control_type):
+    # print(control_type)
+    if control_type == 'object-removal':
+        promptA = 'P_ctxt'
+        promptB = 'P_ctxt'
+        negative_promptA = 'P_obj'
+        negative_promptB = 'P_obj'
+    elif control_type == 'context-aware':
+        promptA = 'P_ctxt'
+        promptB = 'P_ctxt'
+        negative_promptA = ''
+        negative_promptB = ''
+    elif control_type == 'shape-guided':
+        promptA = 'P_shape'
+        promptB = 'P_ctxt'
+        negative_promptA = 'P_shape'
+        negative_promptB = 'P_ctxt'
+    elif control_type == 'image-outpainting':
+        promptA = 'P_ctxt'
+        promptB = 'P_ctxt'
+        negative_promptA = 'P_obj'
+        negative_promptB = 'P_obj'
+    else:
+        promptA = 'P_obj'
+        promptB = 'P_obj'
+        negative_promptA =  'P_obj'
+        negative_promptB =  'P_obj'
+
+    return promptA, promptB, negative_promptA, negative_promptB
 
 class brushnet_ella_loader:
     @classmethod
@@ -554,6 +770,7 @@ NODE_CLASS_MAPPINGS = {
     "brushnet_sampler_ella": brushnet_sampler_ella,
     "brushnet_ella_loader": brushnet_ella_loader,
     "brushnet_ipadapter_matteo": brushnet_ipadapter_matteo,
+    "powerpaint_brushnet_sampler": powerpaint_brushnet_sampler
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "brushnet_model_loader": "BrushNet Model Loader",
@@ -561,4 +778,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "brushnet_sampler_ella": "BrushNet Sampler (ELLA)",
     "brushnet_ella_loader": "BrushNet ELLA Loader",
     "brushnet_ipadapter_matteo": "BrushNet IP Adapter (Matteo)",
+    "powerpaint_brushnet_sampler": "PowerPaint BrushNet Sampler"
 }
