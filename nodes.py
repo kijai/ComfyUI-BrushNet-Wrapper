@@ -406,15 +406,15 @@ class powerpaint_brushnet_sampler(brushnet_sampler):
                     "default": "text-guided"
                 })
         base_inputs["required"]["fitting_degree"] = (
-            "FLOAT", {"default": 1.0, "min": 0.3, "max": 1.0, "step": 0.05},
+            "FLOAT", {"default": 1.0, "min": 0.3, "max": 1.0, "step": 0.01},
             )
-        print(base_inputs)
         return base_inputs
 
     def process(self, brushnet, image, mask, prompt, n_prompt, steps, cfg, guess_mode, clip_skip,
                 cfg_brushnet, control_guidance_start, control_guidance_end, seed, scheduler, task, fitting_degree):
         # Call the parent class's process method to reuse its functionality
-        
+        if 'ip_adapter' in brushnet:
+            raise Exception("This node doesn't currently support using IPAdapter.")
         device = mm.get_torch_device()
         mm.soft_empty_cache()
         pipe=brushnet["pipe"]
@@ -456,8 +456,6 @@ class powerpaint_brushnet_sampler(brushnet_sampler):
             noise_scheduler = TCDScheduler(**scheduler_config)
         pipe.scheduler = noise_scheduler
 
-        
-
         B, H, W, C = image.shape
         image = image.permute(0, 3, 1, 2).to(device)
         
@@ -473,45 +471,33 @@ class powerpaint_brushnet_sampler(brushnet_sampler):
        
         image = image * (1-mask)
 
-        if 'ip_adapter' in brushnet:
-            print("Using IP adapter")
-            prompt_embeds, negative_prompt_embeds = brushnet['ip_adapter'].get_prompt_embeds(
-                brushnet['ip_adapter_image'],
-                prompt=prompt,
-                negative_prompt=n_prompt,
-                weight=[brushnet['ip_adapter_weight']]
-            )
-            prompt_embeds = torch.repeat_interleave(prompt_embeds, B, dim=0)
-            negative_prompt_embeds = torch.repeat_interleave(negative_prompt_embeds, B, dim=0)
-            
-            use_ipadapter = True
-            prompt_list = None
-            n_prompt_list = None
-        else:
-            prompt_list = []
-            prompt_list.append(prompt)
-            if len(prompt_list) < B:
-                prompt_list += [prompt_list[-1]] * (B - len(prompt_list))
+        promptA, promptB, negative_promptA, negative_promptB = add_task(task)
+        prompt_list = []
+        n_prompt_list = []
+        promptA_list = []
+        negative_promptA_list = []
+        promptB_list = []
+        negative_promptB_list = []
 
-            n_prompt_list = []
-            n_prompt_list.append(n_prompt)
-            if len(n_prompt_list) < B:
-                n_prompt_list += [n_prompt_list[-1]] * (B - len(n_prompt_list))
+        prompt_list = [prompt] * (B - len(prompt_list)) if len(prompt_list) < B else prompt_list
+        n_prompt_list = [n_prompt] * (B - len(n_prompt_list)) if len(n_prompt_list) < B else n_prompt_list
 
-            prompt_embeds, negative_prompt_embeds = None, None
-            use_ipadapter = False
+        promptA_list = [promptA] * (B - len(promptA_list)) if len(promptA_list) < B else promptA_list
+        negative_promptA_list = [negative_promptA] * (B - len(negative_promptA_list)) if len(negative_promptA_list) < B else negative_promptA_list
+
+        promptB_list = [promptB] * (B - len(promptB_list)) if len(promptB_list) < B else promptB_list
+        negative_promptB_list = [negative_promptB] * (B - len(negative_promptB_list)) if len(negative_promptB_list) < B else negative_promptB_list
 
         #sample    
         generator = torch.Generator(device).manual_seed(seed)
-        promptA, promptB, negative_promptA, negative_promptB = add_task(task)
-
+        
         images = pipe(
-            promptA = promptA, 
-            promptB = promptB,
-            promptU = prompt,
-            negative_promptA = negative_promptA,
-            negative_promptB = negative_promptB,
-            negative_promptU = n_prompt,
+            promptA = promptA_list, 
+            promptB = promptB_list,
+            promptU = prompt_list,
+            negative_promptA = negative_promptA_list,
+            negative_promptB = negative_promptB_list,
+            negative_promptU = n_prompt_list,
             tradoff=fitting_degree,
             tradoff_nag=fitting_degree,
             image=image,
