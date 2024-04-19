@@ -23,3 +23,5 @@ to `ComfyUI/models/brushnet`
 Original repository:
 
 https://github.com/TencentARC/BrushNet
+
+https://github.com/zhuang2002/PowerPaint
