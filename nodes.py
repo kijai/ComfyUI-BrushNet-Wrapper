@@ -479,6 +479,11 @@ class powerpaint_brushnet_sampler(brushnet_sampler):
         promptB_list = []
         negative_promptB_list = []
 
+        if task=='image-outpainting' or task == 'context-aware':
+            prompt = prompt + ' empty scene'
+        if task=='object-removal':
+            prompt = prompt + ' empty scene blur'
+
         prompt_list = [prompt] * (B - len(prompt_list)) if len(prompt_list) < B else prompt_list
         n_prompt_list = [n_prompt] * (B - len(n_prompt_list)) if len(n_prompt_list) < B else n_prompt_list
 
