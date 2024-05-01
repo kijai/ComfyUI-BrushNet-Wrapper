@@ -281,6 +281,7 @@ class brushnet_sampler:
         device = mm.get_torch_device()
         mm.soft_empty_cache()
         pipe=brushnet["pipe"]
+        assert 'PowerPaint' not in str(type(pipe)), "For PowerPaint use the PowerPaint sampler node"
 
         global IS_MODEL_CPU_OFFLOAD_ENABLED
         if not IS_MODEL_CPU_OFFLOAD_ENABLED:
@@ -418,6 +419,8 @@ class powerpaint_brushnet_sampler(brushnet_sampler):
         device = mm.get_torch_device()
         mm.soft_empty_cache()
         pipe=brushnet["pipe"]
+        assert 'PowerPaint' in str(type(pipe)), "For PowerPaint sampler use the PowerPaint model"
+        
         global IS_MODEL_CPU_OFFLOAD_ENABLED
         if not IS_MODEL_CPU_OFFLOAD_ENABLED:
             pipe.enable_model_cpu_offload()
@@ -675,6 +678,7 @@ class brushnet_sampler_ella:
         dtype = mm.unet_dtype()
         mm.soft_empty_cache()
         pipe=brushnet["pipe"].to(dtype)
+        assert 'PowerPaint' not in str(type(pipe)), "For PowerPaint use the PowerPaint sampler node"
         if 'ipadapter' in brushnet:
             raise Exception("This doesn't currently support using both ELLA and IPAdapter.")
 
