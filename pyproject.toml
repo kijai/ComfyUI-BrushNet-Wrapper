@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-brushnet-wrapper"
-description = ""
+description = "ComfyUI wrapper nodes to use the Diffusers implementation of BrushNet"
 version = "1.0.0"
 license = "LICENSE"
 dependencies = ["diffusers>=0.27.2", "accelerate>=0.29.2", "omegaconf"]
