@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-brushnet-wrapper"
+description = ""
+version = "1.0.0"
+license = "LICENSE"
+dependencies = ["diffusers>=0.27.2", "accelerate>=0.29.2", "omegaconf"]
+
+[project.urls]
+Repository = "https://github.com/kijai/ComfyUI-BrushNet-Wrapper"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-BrushNet-Wrapper"
+Icon = ""
