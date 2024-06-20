@@ -1,4 +1,8 @@
 # ComfyUI wrapper nodes to use the Diffusers implementation of BrushNet
+# UPDATE:
+Instead of this wrapper, I recommend using native ComfyUI implementation of brushnet:
+
+https://github.com/nullquant/ComfyUI-BrushNet
 
 ![image](https://github.com/kijai/ComfyUI-BrushNet-Wrapper/assets/40791699/bb4cc07b-2be5-411b-b563-a03a688ae0e0)
 
