@@ -14,17 +14,17 @@ try:
         PNDMScheduler,
         UniPCMultistepScheduler
     )
-    from .scheduling_tcd import TCDScheduler
-    from diffusers.loaders.single_file_utils import (
+    from .scheduling_tcd import TCDScheduler     
+except:
+    raise ImportError("Diffusers version too old. Please update to 0.27.2 minimum.")
+
+from .single_file_utils import (
         convert_ldm_vae_checkpoint, 
         convert_ldm_unet_checkpoint, 
         create_vae_diffusers_config, 
         create_unet_diffusers_config,
         create_text_encoder_from_ldm_clip_checkpoint
-    )            
-except:
-    raise ImportError("Diffusers version too old. Please update to 0.27.2 minimum.")
-
+    )       
 
 from .brushnet.pipeline_brushnet import StableDiffusionBrushNetPipeline
 from .brushnet.brushnet import BrushNetModel
